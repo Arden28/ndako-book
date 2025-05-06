@@ -40,6 +40,12 @@ export const translations = {
       hotel_location: "Ocean Breeze Hotel Location",
       close: "Close",
       no_rooms: "No rooms available for the selected dates, guest count, or filters.",
+      pay_with_stripe: "Pay with Stripe",
+      pay_with_paystack: "Pay with Paystack",
+      pay_with_paypal: "Pay with PayPal",
+      payment_failed: "Payment failed. Please try again.",
+      select_payment_method: "Please select a payment method.",
+      processing: "Processing...",
     },
     fr: {
       check_in_out: "Arrivée – Départ",

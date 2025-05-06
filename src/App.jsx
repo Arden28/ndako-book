@@ -8,6 +8,7 @@ import MapModal from './components/MapModal';
 import { translations } from './data/translations';
 import { currencyRates } from './data/currencyRates';
 import { roomsData } from './data/roomsData';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 const App = () => {
   const [currency, setCurrency] = useState(localStorage.getItem('currency') || 'USD');

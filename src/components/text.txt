@@ -7,7 +7,7 @@ import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 const stripePromise = loadStripe("pk_test_your_stripe_publishable_key");
 
 // Paystack public key (replace with your Paystack public key)
-const paystackPublicKey = "pk_test_8895cdf5c80fc65ac2fc2d4901b50773bbad12c5";
+const paystackPublicKey = "pk_test_your_paystack_public_key";
 
 // PayPal client ID (replace with your PayPal client ID)
 const paypalClientId = "your_paypal_client_id";
@@ -19,8 +19,6 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
   const [paymentMethod, setPaymentMethod] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [paymentStatus, setPaymentStatus] = useState('idle');
-  const [paymentError, setPaymentError] = useState('');
-  // const navigate = useNavigate();
 
   // Debug roomId and roomsData
   console.log('BookingModal Props:', {
@@ -32,7 +30,7 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
   });
 
   // Find room with fallback
-  const parsedRoomId = isNaN(parseInt(roomId)) ? null : parseInt(roomId);
+  const parsedRoomId = parseInt(roomId);
   const room = roomsData?.find(r => r.id === parsedRoomId) || (roomsData?.length > 0 ? roomsData[0] : null);
   console.log('Room:', room);
 
@@ -76,12 +74,8 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
     const elements = useElements();
 
     const handleStripePayment = async () => {
-      if (!stripe || !elements) {
-        setPaymentError(translations[language].payment_failed || 'Payment setup failed.');
-        return;
-      }
+      if (!stripe || !elements) return;
       setPaymentStatus('processing');
-      setPaymentError('');
       try {
         // Mock server-side checkout session creation
         const response = await fetch('/api/create-checkout-session', {
@@ -103,16 +97,13 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
         const { error } = await stripe.redirectToCheckout({ sessionId });
         if (error) {
           setPaymentStatus('error');
-          setPaymentError(error.message);
+          alert(error.message);
         } else {
           setPaymentStatus('success');
-          // navigate('/booking-success', {
-          //   state: { reference: sessionId, amount: total, currency, roomName: room.name },
-          // });
         }
       } catch (error) {
         setPaymentStatus('error');
-        setPaymentError(translations[language].payment_failed || 'Payment failed. Please try again.');
+        alert(translations[language].payment_failed || 'Payment failed. Please try again.');
       }
     };
 
@@ -222,6 +213,308 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
         >
           <i className="fas fa-times text-xl"></i>
         </button>
+        <div className="flex flex-col sm:flex-row">
+          {/* Left Side: Room Details */}
+          <div className="sm:w-1/2 p-4 sm:p-6 bg-gray-50">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">{room.name}</h2>
+            {/* Carousel */}
+            <div className="mb-6 relative">
+              {room.images && room.images.length > 0 ? (
+                <div className="relative w-full max-h-64 sm:max-h-96 overflow-hidden rounded-lg shadow-md">
+                  {room.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`${room.name} image ${idx + 1}`}
+                      className={`w-full h-full object-cover transition-transform duration-500 ease-in-out transform ${
+                        idx === currentImageIndex ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+                      } absolute top-0 left-0`}
+                      style={{ transform: idx === currentImageIndex ? 'translateX(0)' : idx < currentImageIndex ? 'translateX(-100%)' : 'translateX(100%)' }}
+                    />
+                  ))}
+                  {/* Navigation Buttons */}
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-75 p-3 rounded-full hover:bg-opacity-100 text-gray-800 hover:text-gray-900 transition-all"
+                    aria-label="Previous image"
+                  >
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-75 p-3 rounded-full hover:bg-opacity-100 text-gray-800 hover:text-gray-900 transition-all"
+                    aria-label="Next image"
+                  >
+                    <i className="fas fa-chevron-right"></i>
+                  </button>
+                  {/* Navigation Dots */}
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                    {room.images.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => goToImage(idx)}
+                        className={`w-3 h-3 rounded-full transition-all ${
+                          idx === currentImageIndex ? 'bg-blue-600 scale-125' : 'bg-gray-400 hover:bg-gray-500'
+                        }`}
+                        aria-label={`Go to image ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-64 sm:h-96 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600">
+                  No images available
+                </div>
+              )}
+            </div>
+            {/* Features */}
+            <div className="mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">{translations[language].features || 'Features'}</h3>
+              <ul className="text-xs sm:text-sm text-gray-600 space-y-2">
+                <li><i className="fas fa-ruler-combined mr-2"></i>{room.size}</li>
+                <li><i className="fas fa-bed mr-2"></i>{room.bed_type}</li>
+                <li><i className="fas fa-eye mr-2"></i>{room.view}</li>
+                <li><i className="fas fa-info-circle mr-2"></i>{room.cancellation}</li>
+                {room.amenities.map(a => (
+                  <li key={a.name}><i className={`${a.icon} mr-2`}></i>{a.name}</li>
+                ))}
+              </ul>
+            </div>
+            {/* Price per Night */}
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">{translations[language].price_per_night || 'Price per Night'}</h3>
+              <p className="text-xl sm:text-2xl font-bold text-gray-800">
+                {currency} {pricePerNight.toFixed(2)}
+                {room.genius_discount && (
+                  <span className="ml-2 text-xs sm:text-sm text-green-600">{translations[language].genius_discount || 'Genius Discount'}</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Right Side: Booking Details */}
+          <div className="sm:w-1/2 p-4 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">{translations[language].book_your_stay || 'Book Your Stay'}</h2>
+            <div className="space-y-4">
+              {/* Check-in */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].check_in}</label>
+                <input
+                  type="text"
+                  value={checkIn}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-gray-100 text-xs sm:text-sm"
+                />
+              </div>
+              {/* Check-out */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].check_out}</label>
+                <input
+                  type="text"
+                  value={checkOut}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-gray-100 text-xs sm:text-sm"
+                />
+              </div>
+              {/* Number of Nights */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].nights || 'Nights'}</label>
+                <input
+                  type="text"
+                  value={nights}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-gray-100 text-xs sm:text-sm"
+                />
+              </div>
+              {/* Guests */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].guests}</label>
+                <input
+                  type="number"
+                  value={guests}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-gray-100 text-xs sm:text-sm"
+                />
+              </div>
+              {/* Number of Rooms */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].number_of_rooms}</label>
+                <select
+                  value={roomsCount}
+                  onChange={(e) => setRoomsCount(parseInt(e.target.value))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 text-xs sm:text-sm"
+                >
+                  {[...Array(room.available_units)].map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1} {translations[language].rooms}{i + 1 > 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Guest Name */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].full_name}</label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                  required
+                  aria-required="true"
+                />
+              </div>
+              {/* Guest Email */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">{translations[language].email}</label>
+                <input
+                  type="email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                  required
+                  aria-required="true"
+                />
+              </div>
+              {/* Pricing Summary */}
+              <div className="border-t pt-4">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">{translations[language].summary || 'Summary'}</h3>
+                <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>{translations[language].subtotal || 'Subtotal'}</span>
+                    <span>{currency} {subtotal.toFixed(2)}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>{translations[language].discount || 'Discount'} (Genius)</span>
+                      <span>-{currency} {discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-gray-800">
+                    <span>{translations[language].total || 'Total'}</span>
+                    <span>{currency} {total.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-blue-600">
+                    <span>{translations[language].downpayment || 'Downpayment'} ({downpaymentPercentage}%)</span>
+                    <span>{currency} {downpayment.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Payment Options */}
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">{translations[language].payment_method || 'Payment Method'}</h3>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <button
+                    onClick={() => setPaymentMethod('Stripe')}
+                    className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'Stripe' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                  >
+                    <i className="fas fa-credit-card mr-2"></i> Stripe
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('Paystack')}
+                    className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'Paystack' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                  >
+                    <i className="fas fa-money-bill-wave mr-2"></i> Paystack
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('PayPal')}
+                    className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'PayPal' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                  >
+                    <i className="fab fa-paypal mr-2"></i> PayPal
+                  </button>
+                </div>
+                {paymentMethod === 'Stripe' && (
+                  <Elements stripe={stripePromise}>
+                    <StripePayment />
+                  </Elements>
+                )}
+                {paymentMethod === 'Paystack' && <PaystackPayment />}
+                {paymentMethod === 'PayPal' && (
+                  <PayPalScriptProvider options={{ "client-id": paypalClientId, currency }}>
+                    <PayPalPayment />
+                  </PayPalScriptProvider>
+                )}
+              </div>
+              {/* Actions */}
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-600 rounded-md hover:bg-gray-100 text-xs sm:text-sm"
+                >
+                  {translations[language].cancel}
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="bg-booking-blue text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors btn-show-prices text-xs sm:text-sm"
+                  disabled={paymentStatus === 'processing' || !guestName || !guestEmail || !paymentMethod}
+                >
+                  {translations[language].reserve_room || 'Reserve Room'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BookingModal;
+
+
+
+
+
+
+
+
+
+
+
+import { useState, useEffect } from "react";
+
+const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, language, translations, currency, roomsData }) => {
+  const room = roomsData.find(r => r.id === parseInt(roomId));
+  const [roomsCount, setRoomsCount] = useState(1);
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  if (!isOpen || !room) return null;
+
+  // Calculate number of nights
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)) || 1;
+
+  // Calculate pricing
+  const currencyRates = { USD: 1, EUR: 0.95, KES: 129 }; // Fallback if not passed
+  const pricePerNight = room.price_usd * (currencyRates[currency] || 1);
+  const discount = room.genius_discount ? 0.1 : 0; // 10% Genius discount
+  const subtotal = pricePerNight * nights * roomsCount;
+  const discountAmount = subtotal * discount;
+  const total = subtotal - discountAmount;
+  const downpaymentPercentage = 20; // Configurable downpayment
+  const downpayment = (total * downpaymentPercentage) / 100;
+
+  // Image gallery navigation
+  const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % room.images.length);
+  const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + room.images.length) % room.images.length);
+
+  const handleSubmit = () => {
+    if (!guestName || !guestEmail || !paymentMethod) {
+      alert(translations[language].fill_required_fields || 'Please fill out all required fields.');
+      return;
+    }
+    alert(
+      `${translations[language].booking_confirmed || 'Booking confirmed'}: ${roomsCount} ${room.name} for ${guestName} (${guestEmail}), ${guests} guest(s) from ${checkIn} to ${checkOut}, ${nights} night(s), Total: ${currency} ${total.toFixed(2)}, Payment: ${paymentMethod}`
+    );
+    onClose();
+  };
+
+  return (
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} z-50`}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto transition-all duration-300 animate-fade-in">
         <div className="flex flex-col sm:flex-row">
           {/* Left Side: Room Details */}
           <div className="sm:w-1/2 p-4 sm:p-6 bg-gray-50">
@@ -394,47 +687,26 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
               {/* Payment Options */}
               <div>
                 <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2">{translations[language].payment_method || 'Payment Method'}</h3>
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setPaymentMethod('Stripe')}
-                    className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'Stripe' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                    onClick={() => setPaymentMethod('Credit Card')}
+                    className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'Credit Card' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
                   >
-                    <i className="fas fa-credit-card mr-2"></i> Stripe
+                    <i className="fas fa-credit-card mr-2"></i> Credit Card
                   </button>
-                  {currency === 'KES' && (
-                    <button
-                      onClick={() => setPaymentMethod('Paystack')}
-                      className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'Paystack' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-                    >
-                      <i className="fas fa-money-bill-wave mr-2"></i> Paystack
-                    </button>
-                  )}
                   <button
                     onClick={() => setPaymentMethod('PayPal')}
                     className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'PayPal' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
                   >
                     <i className="fab fa-paypal mr-2"></i> PayPal
                   </button>
+                  <button
+                    onClick={() => setPaymentMethod('M-Pesa')}
+                    className={`flex items-center justify-center p-2 border rounded-md text-xs sm:text-sm ${paymentMethod === 'M-Pesa' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                  >
+                    <i className="fas fa-mobile-alt mr-2"></i> M-Pesa
+                  </button>
                 </div>
-                {paymentStatus === 'processing' && (
-                  <div className="flex justify-center mb-4">
-                    <i className="fas fa-spinner animate-spin text-blue-600 text-2xl"></i>
-                  </div>
-                )}
-                {paymentError && (
-                  <div className="text-red-600 text-xs sm:text-sm mb-4">{paymentError}</div>
-                )}
-                {paymentMethod === 'Stripe' && (
-                  <Elements stripe={stripePromise}>
-                    <StripePayment />
-                  </Elements>
-                )}
-                {paymentMethod === 'Paystack' && currency === 'KES' && <PaystackPayment />}
-                {paymentMethod === 'PayPal' && (
-                  <PayPalScriptProvider options={{ "client-id": paypalClientId, currency }}>
-                    <PayPalPayment />
-                  </PayPalScriptProvider>
-                )}
               </div>
               {/* Actions */}
               <div className="flex justify-end space-x-4">
@@ -447,7 +719,7 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
                 <button
                   onClick={handleSubmit}
                   className="bg-booking-blue text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors btn-show-prices text-xs sm:text-sm"
-                  disabled={paymentStatus === 'processing' || !guestName || !guestEmail || !paymentMethod}
+                  disabled={!guestName || !guestEmail || !paymentMethod}
                 >
                   {translations[language].reserve_room || 'Reserve Room'}
                 </button>
