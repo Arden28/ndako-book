@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import jsPDF from "jspdf";
+import confetti from "canvas-confetti";
 
 // Initialize Stripe (replace with your Stripe publishable key)
 const stripePromise = loadStripe("pk_test_your_stripe_publishable_key");
@@ -45,6 +47,71 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
     }, 5000); // Change image every 5 seconds
     return () => clearInterval(interval);
   }, [room?.images?.length]);
+
+  // Confetti animation on success
+  useEffect(() => {
+    if (paymentStatus === 'success') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#4CAF50', '#2196F3', '#FF9800'],
+      });
+    }
+  }, [paymentStatus]);
+  
+  // Generate PDF receipt
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const logoUrl = 'https://via.placeholder.com/150x50.png?text=Hotel+Logo'; // Replace with your logo URL
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Booking Confirmation', pageWidth / 2, 20, { align: 'center' });
+    
+    // Logo
+    try {
+      doc.addImage(logoUrl, 'PNG', 20, 30, 50, 15);
+    } catch (error) {
+      console.error('Failed to add logo:', error);
+    }
+    
+    // Booking Details
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    let y = 60;
+    const details = [
+      `Guest Name: ${guestName}`,
+      `Email: ${guestEmail}`,
+      `Room: ${room.name}`,
+      `Check-in: ${checkIn}`,
+      `Check-out: ${checkOut}`,
+      `Nights: ${nights}`,
+      `Guests: ${guests}`,
+      `Rooms: ${roomsCount}`,
+      `Subtotal: ${currency} ${subtotal.toFixed(2)}`,
+      `Discount: ${currency} ${discountAmount.toFixed(2)}`,
+      `Total Paid: ${currency} ${total.toFixed(2)}`,
+      `Downpayment: ${currency} ${downpayment.toFixed(2)}`,
+      `Payment Method: ${paymentMethod}`,
+      `Reference: ${paymentReference || 'N/A'}`,
+    ];
+    
+    details.forEach((line) => {
+      doc.text(line, 20, y);
+      y += 10;
+    });
+    
+    // Footer
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Thank you for choosing our hotel!', pageWidth / 2, y + 10, { align: 'center' });
+    doc.text('Contact: support@hotel.com | +1-800-123-4567', pageWidth / 2, y + 20, { align: 'center' });
+    
+    doc.save(`Booking_Confirmation_${paymentReference || 'N/A'}.pdf`);
+  };
 
   if (!isOpen || !room) {
     console.log('Modal not rendered:', { isOpen, room });
@@ -221,36 +288,106 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
   if (paymentStatus === 'success') {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 opacity-100 z-50">
-        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-2 sm:mx-4 p-6 sm:p-8 animate-fade-in">
+        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-2xl max-w-md sm:max-w-lg md:max-w-2xl w-full mx-2 sm:mx-4 p-6 sm:p-8 md:p-10 animate-fade-in">
           <div className="text-center">
-            <i className="fas fa-check-circle text-green-500 text-5xl mb-4 animate-bounce"></i>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+            <i className="fas fa-check-circle text-green-600 text-4xl sm:text-5xl md:text-6xl mb-4 animate-bounce"></i>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">
               {translations[language].booking_confirmed || 'Booking Confirmed!'}
             </h1>
-            <p className="text-gray-600 text-sm sm:text-base mb-6">
-              {translations[language].booking_confirmed_message || 'Thank you for your booking. Your reservation has been successfully processed.'}
+            <p className="text-gray-700 text-sm sm:text-base md:text-lg font-sans mb-6">
+              {translations[language].booking_confirmed_message || 'Your reservation has been successfully processed. We look forward to welcoming you!'}
             </p>
           </div>
-          <div className="space-y-4 text-sm sm:text-base border-t pt-4">
-            <div className="flex justify-between">
-              <span className="font-medium text-gray-700">{translations[language].room || 'Room'}:</span>
-              <span className="text-gray-600">{room.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium text-gray-700">{translations[language].amount_paid || 'Amount Paid'}:</span>
-              <span className="text-gray-600">{currency} {total.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium text-gray-700">{translations[language].reference || 'Reference'}:</span>
-              <span className="text-gray-600">{paymentReference || 'N/A'}</span>
+          <div className="border-t border-gray-200 pt-6 mb-6">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-serif font-semibold text-gray-800 mb-4">
+              {translations[language].stay_details || 'Stay Details'}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm md:text-base text-gray-700">
+              <div>
+                <span className="font-medium">{translations[language].guest_name || 'Guest Name'}:</span> {guestName}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].email || 'Email'}:</span> {guestEmail}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].room || 'Room'}:</span> {room.name}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].check_in || 'Check-in'}:</span> {checkIn}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].check_out || 'Check-out'}:</span> {checkOut}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].nights || 'Nights'}:</span> {nights}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].guests || 'Guests'}:</span> {guests}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].number_of_rooms || 'Rooms'}:</span> {roomsCount}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].subtotal || 'Subtotal'}:</span> {currency} {subtotal.toFixed(2)}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].discount || 'Discount'}:</span> {currency} {discountAmount.toFixed(2)}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].total || 'Total Paid'}:</span> {currency} {total.toFixed(2)}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].downpayment || 'Downpayment'}:</span> {currency} {downpayment.toFixed(2)}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].payment_method || 'Payment Method'}:</span> {paymentMethod}
+              </div>
+              <div>
+                <span className="font-medium">{translations[language].reference || 'Reference'}:</span> {paymentReference || 'N/A'}
+              </div>
             </div>
           </div>
-          <div className="mt-6 flex justify-center">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button
+              onClick={generatePDF}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+            >
+              <i className="fas fa-download mr-2"></i>
+              {translations[language].download_receipt || 'Download Receipt'}
+            </button>
+            <a
+              href={`mailto:${guestEmail}?subject=Booking Confirmation&body=Dear ${guestName},%0A%0AYour booking for ${room.name} has been confirmed.%0AReference: ${paymentReference || 'N/A'}%0ATotal: ${currency} ${total.toFixed(2)}%0A%0AThank you!`}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+            >
+              <i className="fas fa-envelope mr-2"></i>
+              {translations[language].send_confirmation || 'Send Confirmation'}
+            </a>
+            <a
+              href={`https://x.com/intent/post?text=I just booked a stay at ${room.name}! Excited for my trip! #Travel #HotelBooking`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-gray-800 hover:to-gray-900 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+            >
+              <i className="fab fa-x-twitter mr-2"></i>
+              {translations[language].share_on_x || 'Share on X'}
+            </a>
             <button
               onClick={onClose}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base"
+              className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
             >
+              <i className="fas fa-times mr-2"></i>
               {translations[language].close || 'Close'}
+            </button>
+          </div>
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-xs sm:text-sm md:text-base">
+              {translations[language].upsell_message || 'Enhance your stay with our exclusive spa and dining experiences!'}
+            </p>
+            <button
+              onClick={() => window.location.href = '/services'} // Replace with actual services page
+              className="mt-2 text-blue-600 hover:text-blue-800 font-semibold text-xs sm:text-sm md:text-base"
+            >
+              {translations[language].explore_more || 'Explore More'}
             </button>
           </div>
         </div>
