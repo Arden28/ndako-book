@@ -20,6 +20,7 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [paymentStatus, setPaymentStatus] = useState('idle');
   const [paymentError, setPaymentError] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
   // const navigate = useNavigate();
 
   // Debug roomId and roomsData
@@ -106,9 +107,7 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
           setPaymentError(error.message);
         } else {
           setPaymentStatus('success');
-          // navigate('/booking-success', {
-          //   state: { reference: sessionId, amount: total, currency, roomName: room.name },
-          // });
+          setPaymentReference(sessionId);
         }
       } catch (error) {
         setPaymentStatus('error');
@@ -134,9 +133,11 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
   const PaystackPayment = () => {
     const handlePaystackPayment = () => {
       if (!window.PaystackPop) {
-        alert('Paystack script not loaded. Please try again.');
+        setPaymentError(translations[language].paystack_not_loaded || 'Paystack script not loaded. Please try again.');
         return;
       }
+      setPaymentStatus('processing');
+      setPaymentError('');
       const handler = window.PaystackPop.setup({
         key: paystackPublicKey,
         email: guestEmail,
@@ -145,11 +146,11 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
         ref: new Date().getTime().toString(),
         callback: (response) => {
           setPaymentStatus('success');
-          alert(`${translations[language].booking_confirmed || 'Booking confirmed'}: Reference ${response.reference}`);
-          onClose();
+          setPaymentReference(response.reference);
         },
         onClose: () => {
           setPaymentStatus('idle');
+          setPaymentError('');
         },
       });
       handler.openIframe();
@@ -186,14 +187,19 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
         }}
         onApprove={async (data, actions) => {
           setPaymentStatus('processing');
-          const order = await actions.order.capture();
-          setPaymentStatus('success');
-          alert(`${translations[language].booking_confirmed || 'Booking confirmed'}: Order ${order.id}`);
-          onClose();
+          setPaymentError('');
+          try {
+            const order = await actions.order.capture();
+            setPaymentStatus('success');
+            setPaymentReference(order.id);
+          } catch (error) {
+            setPaymentStatus('error');
+            setPaymentError(translations[language].payment_failed || 'Payment failed. Please try again.');
+          }
         }}
         onError={(err) => {
           setPaymentStatus('error');
-          alert(translations[language].payment_failed || 'Payment failed. Please try again.');
+          setPaymentError(translations[language].payment_failed || 'Payment failed. Please try again.');
         }}
       />
     );
@@ -201,15 +207,56 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
 
   const handleSubmit = () => {
     if (!guestName || !guestEmail) {
-      alert(translations[language].fill_required_fields || 'Please fill out all required fields.');
+      setPaymentError(translations[language].fill_required_fields || 'Please fill out all required fields.');
       return;
     }
     if (!paymentMethod) {
-      alert(translations[language].select_payment_method || 'Please select a payment method.');
+      setPaymentError(translations[language].select_payment_method || 'Please select a payment method.');
       return;
     }
     // Payment is handled by respective components
   };
+
+  // Success message
+  if (paymentStatus === 'success') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 opacity-100 z-50">
+        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-2 sm:mx-4 p-6 sm:p-8 animate-fade-in">
+          <div className="text-center">
+            <i className="fas fa-check-circle text-green-500 text-5xl mb-4 animate-bounce"></i>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+              {translations[language].booking_confirmed || 'Booking Confirmed!'}
+            </h1>
+            <p className="text-gray-600 text-sm sm:text-base mb-6">
+              {translations[language].booking_confirmed_message || 'Thank you for your booking. Your reservation has been successfully processed.'}
+            </p>
+          </div>
+          <div className="space-y-4 text-sm sm:text-base border-t pt-4">
+            <div className="flex justify-between">
+              <span className="font-medium text-gray-700">{translations[language].room || 'Room'}:</span>
+              <span className="text-gray-600">{room.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium text-gray-700">{translations[language].amount_paid || 'Amount Paid'}:</span>
+              <span className="text-gray-600">{currency} {total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium text-gray-700">{translations[language].reference || 'Reference'}:</span>
+              <span className="text-gray-600">{paymentReference || 'N/A'}</span>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={onClose}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base"
+            >
+              {translations[language].close || 'Close'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} z-50`}>
