@@ -108,7 +108,8 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
     doc.setFontSize(10);
     doc.setFont('helvetica', 'italic');
     doc.text('Thank you for choosing our hotel!', pageWidth / 2, y + 10, { align: 'center' });
-    doc.text('Contact: support@hotel.com | +1-800-123-4567', pageWidth / 2, y + 20, { align: 'center' });
+    doc.text('Contact: support@ndako.tech | +254 701 48 90 35', pageWidth / 2, y + 20, { align: 'center' });
+    doc.text('Powered by Ndako', pageWidth / 2, y + 30, { align: 'center', color: 667382 });
     
     doc.save(`Booking_Confirmation_${paymentReference || 'N/A'}.pdf`);
   };
@@ -288,13 +289,13 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
   if (paymentStatus === 'success') {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 opacity-100 z-50">
-        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-2xl max-w-md sm:max-w-lg md:max-w-2xl w-full mx-2 sm:mx-4 p-6 sm:p-8 md:p-10 animate-fade-in">
+        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-2xl max-w-lg sm:max-w-xl md:max-w-3xl w-full mx-2 sm:mx-4 min-h-[60vh] max-h-[90vh] overflow-y-auto p-6 sm:p-8 md:p-10 animate-fade-in scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <div className="text-center">
             <i className="fas fa-check-circle text-green-600 text-4xl sm:text-5xl md:text-6xl mb-4 animate-bounce"></i>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">
               {translations[language].booking_confirmed || 'Booking Confirmed!'}
             </h1>
-            <p className="text-gray-700 text-sm sm:text-base md:text-lg font-sans mb-6">
+            <p className="text-base sm:text-base md:text-lg font-sans text-gray-700 mb-6">
               {translations[language].booking_confirmed_message || 'Your reservation has been successfully processed. We look forward to welcoming you!'}
             </p>
           </div>
@@ -302,7 +303,7 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
             <h2 className="text-lg sm:text-xl md:text-2xl font-serif font-semibold text-gray-800 mb-4">
               {translations[language].stay_details || 'Stay Details'}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm md:text-base text-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm sm:text-sm md:text-base text-gray-700">
               <div>
                 <span className="font-medium">{translations[language].guest_name || 'Guest Name'}:</span> {guestName}
               </div>
@@ -350,14 +351,14 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button
               onClick={generatePDF}
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-green-600 hover:to-green-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-sm sm:text-sm md:text-base"
             >
               <i className="fas fa-download mr-2"></i>
               {translations[language].download_receipt || 'Download Receipt'}
             </button>
             <a
               href={`mailto:${guestEmail}?subject=Booking Confirmation&body=Dear ${guestName},%0A%0AYour booking for ${room.name} has been confirmed.%0AReference: ${paymentReference || 'N/A'}%0ATotal: ${currency} ${total.toFixed(2)}%0A%0AThank you!`}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-sm sm:text-sm md:text-base"
             >
               <i className="fas fa-envelope mr-2"></i>
               {translations[language].send_confirmation || 'Send Confirmation'}
@@ -366,26 +367,26 @@ const BookingModal = ({ isOpen, onClose, roomId, checkIn, checkOut, guests, lang
               href={`https://x.com/intent/post?text=I just booked a stay at ${room.name}! Excited for my trip! #Travel #HotelBooking`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-gray-800 hover:to-gray-900 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+              className="bg-gradient-to-r from-gray-700 to-gray-800 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-gray-800 hover:to-gray-900 hover:transform hover:scale-105 transition-all flex items-center justify-center text-sm sm:text-sm md:text-base"
             >
               <i className="fab fa-x-twitter mr-2"></i>
               {translations[language].share_on_x || 'Share on X'}
             </a>
             <button
               onClick={onClose}
-              className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-xs sm:text-sm md:text-base"
+              className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 hover:transform hover:scale-105 transition-all flex items-center justify-center text-sm sm:text-sm md:text-base"
             >
               <i className="fas fa-times mr-2"></i>
               {translations[language].close || 'Close'}
             </button>
           </div>
           <div className="mt-6 text-center">
-            <p className="text-gray-600 text-xs sm:text-sm md:text-base">
+            <p className="text-gray-600 text-sm sm:text-sm md:text-base">
               {translations[language].upsell_message || 'Enhance your stay with our exclusive spa and dining experiences!'}
             </p>
             <button
               onClick={() => window.location.href = '/services'} // Replace with actual services page
-              className="mt-2 text-blue-600 hover:text-blue-800 font-semibold text-xs sm:text-sm md:text-base"
+              className="mt-2 text-blue-600 hover:text-blue-800 font-semibold text-sm sm:text-sm md:text-base"
             >
               {translations[language].explore_more || 'Explore More'}
             </button>
