@@ -40,7 +40,7 @@ const SearchForm = ({ language, translations, dates, setDates, guests, setGuests
             type="text"
             className="w-full border border-gray-300 px-4 py-3 cursor-pointer rounded-full"
             readOnly
-            value={`${guests} ${translations[language].guests}${guests > 1 ? 's' : ''}, ${rooms} ${translations[language].rooms}${rooms > 1 ? 's' : ''}`}
+            value={`${guests} ${translations[language].guests}${guests > 1 ? '' : ''}, ${rooms} ${translations[language].rooms}${rooms > 1 ? 's' : ''}`}
             aria-label="Select guests and rooms"
             onClick={() => setIsGuestsOpen(!isGuestsOpen)}
           />
@@ -56,7 +56,7 @@ const SearchForm = ({ language, translations, dates, setDates, guests, setGuests
               >
                 {[1, 2, 3, 4].map(n => (
                   <option key={n} value={n}>
-                    {n} {translations[language].guests}{n > 1 ? 's' : ''}
+                    {n} {translations[language].guests}{n > 1 ? '' : ''}
                   </option>
                 ))}
               </select>
@@ -72,7 +72,7 @@ const SearchForm = ({ language, translations, dates, setDates, guests, setGuests
               >
                 {[1, 2, 3].map(n => (
                   <option key={n} value={n}>
-                    {n} {translations[language].rooms}{n > 1 ? 's' : ''}
+                    {n} {translations[language].rooms}{n > 1 ? '' : ''}
                   </option>
                 ))}
               </select>

@@ -8,8 +8,7 @@ const Header = ({ currency, setCurrency, language, setLanguage, translations, da
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <a href="#" className="text-3xl font-bold flex items-center mb-4 sm:mb-0">
-            <i className="fas fa-hotel nav-icon" aria-hidden="true"></i>
-            Ocean Breeze Hotel
+            <img src="/assets/images/ndako.png" style={{ height: '65px' }} alt="" />
           </a>
           <div className="flex flex-wrap items-center gap-4">
             <CurrencyDropdown currency={currency} setCurrency={setCurrency} />
@@ -22,15 +21,21 @@ const Header = ({ currency, setCurrency, language, setLanguage, translations, da
             </a>
           </div>
         </div>
-        <div className="mt-4 flex items-center">
-          <div className="star-rating text-2xl" aria-label="4-star hotel">
-            {Array(4)
-              .fill()
-              .map((_, i) => (
-                <i key={i} className="fas fa-star"></i>
-              ))}
-          </div>
-          <span className="ml-2 text-lg">{translations[language].star_hotel}</span>
+        <div className="mt-4 items-center">
+            <h3 className="text-lg fs-3">
+              <i className="fas fa-hotel nav-icon" aria-hidden="true"></i>
+              Ocean Breeze Hotel
+            </h3>
+            <div className="flex">
+              <div className="star-rating text-2xl" aria-label="4-star hotel">
+                {Array(4)
+                  .fill()
+                  .map((_, i) => (
+                    <i key={i} className="fas fa-star"></i>
+                  ))}
+              </div>
+              <span className="ml-2 text-lg">{translations[language].star_hotel}</span>
+            </div>
         </div>
         <SearchForm
           language={language}

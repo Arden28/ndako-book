@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Breadcrumb from './components/Breadcrumb';
 import Sidebar from './components/Sidebar';
@@ -15,11 +15,17 @@ const App = () => {
   const [dates, setDates] = useState([new Date('2025-05-07'), new Date('2025-05-10')]);
   const [guests, setGuests] = useState(2);
   const [rooms, setRooms] = useState(1);
-  const [maxPrice, setMaxPrice] = useState(500);
+  // const [maxPrice, setMaxPrice] = useState(500);
+  const [maxPrice, setMaxPrice] = useState(500 * currencyRates[currency]); // Scale maxPrice
   const [sortBy, setSortBy] = useState('price-asc');
   const [amenities, setAmenities] = useState([]);
   const [bookingModal, setBookingModal] = useState({ isOpen: false, roomId: null, checkIn: '', checkOut: '' });
   const [isMapOpen, setIsMapOpen] = useState(false);
+
+  // Update maxPrice when currency changes
+  useEffect(() => {
+    setMaxPrice(500 * currencyRates[currency]);
+  }, [currency]);
 
   const handleSearch = () => {
     // Trigger room list update (handled by RoomList useEffect)

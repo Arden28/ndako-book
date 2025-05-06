@@ -9,19 +9,48 @@ const RoomList = ({ language, translations, currency, currencyRates, dates, gues
     return () => clearTimeout(timer);
   }, [dates, guests, rooms, maxPrice, sortBy, amenities]);
 
+  // Validate props
+  if (!currency || !currencyRates || !currencyRates[currency] || !roomsData || !Array.isArray(roomsData)) {
+    console.error('Invalid props:', { currency, currencyRates, roomsData });
+    return (
+      <section>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">{translations[language]?.available_rooms || 'Available Rooms'}</h2>
+        <p className="text-gray-600">Error: Invalid data provided.</p>
+      </section>
+    );
+  }
+
+  // Normalize maxPrice to USD, with a fallback to avoid over-filtering
+  const maxPriceInUSD = (maxPrice && currencyRates[currency]) ? maxPrice / currencyRates[currency] : 1000;
+  console.log('RoomList Debug:', { currency, maxPrice, maxPriceInUSD, roomsDataLength: roomsData.length });
+
   const filteredRooms = roomsData.filter(room => {
     const [checkIn, checkOut] = dates.length === 2 ? [dates[0], dates[1]] : ['', ''];
     const isAvailable = !room.unavailable_dates.some(date => {
       const d = new Date(date);
       return d >= new Date(checkIn) && d <= new Date(checkOut);
     });
-    const price = room.price_usd * currencyRates[currency];
     const hasGuests = room.max_guests >= guests;
     const hasRooms = room.available_units >= rooms;
-    const withinPrice = price <= maxPrice;
+    const withinPrice = room.price_usd <= maxPriceInUSD;
     const hasAmenities = amenities.length === 0 || amenities.every(amenity => room.amenities.some(a => a.name.toLowerCase() === amenity));
+
+    // Debug each room's filtering
+    console.log('Room Filter:', {
+      roomId: room.id,
+      roomName: room.name,
+      priceUSD: room.price_usd,
+      withinPrice,
+      isAvailable,
+      hasGuests,
+      hasRooms,
+      hasAmenities
+    });
+
     return isAvailable && hasGuests && hasRooms && withinPrice && hasAmenities;
   });
+
+  console.log('Filtered Rooms:', filteredRooms.length, filteredRooms.map(r => r.name));
 
   const sortedRooms = [...filteredRooms].sort((a, b) => {
     if (sortBy === 'price-asc') return a.price_usd - b.price_usd;

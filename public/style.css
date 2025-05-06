@@ -3,10 +3,10 @@ body {
 
     font-family: BlinkMacSystemFont, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; 
 }
-.booking-blue { 
+.bg-booking-blue { 
     background-color: #003580; 
 }
-.booking-yellow { 
+.bg-booking-yellow { 
     background-color: #FEBA02; 
 }
 .room-card { 
@@ -22,7 +22,8 @@ body {
     transition: background-color 0.3s ease; 
 }
 .btn-show-prices:hover { 
-    background-color: #002b66; 
+    background-color: #002b66;
+    color: #fff;
 }
 .flatpickr-calendar { 
     border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); 
